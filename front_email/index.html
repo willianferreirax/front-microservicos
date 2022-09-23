@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email</title>
+
+    <style>
+        .v-application--wrap {
+            justify-content: center;
+            background: -webkit-linear-gradient(-135deg, #3b3746, #11072c);
+            background: -o-linear-gradient(-135deg, #3b3746, #11072c);
+            background: -moz-linear-gradient(-135deg, #3b3746, #11072c);
+            background: linear-gradient(-135deg, #3b3746, #11072c);
+        }
+
+        .v-application .primary.primary {
+            background-color: #11072c !important;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <script type="text/x-template" id="app-template">
+
+        <v-app>
+            <v-app-bar app style="box-shadow:none !important; background-color:#11072c">
+                <v-toolbar-title class="d-flex" style="color:#fff; font-size:15px; width:100%">
+                    Microserviço Email
+                </v-toolbar-title>
+                <v-spacer></v-spacer>
+                
+            </v-app-bar>
+
+            <v-main>
+                <v-container style="background-color: #fff; height: 100vh; border-radius: 12px">
+                    <v-row>
+                        
+                        <v-col>
+                            
+                            <v-autocomplete
+                                :items="itemsTemplate"
+                                label="Selecione o template"
+                                v-model="selectedTemplate"
+                            ></v-autocomplete>
+
+                        </v-col>
+
+                        <v-col>
+                            
+                            <v-autocomplete
+                                :items="itemsDestinatarios"
+                                label="Selecione os destinatarios"
+                                v-model="selectedDestinatarios"
+                                multiple
+                            ></v-autocomplete>
+
+                        </v-col>
+
+
+                    </v-row>
+
+                    <v-row>
+
+                        <v-col>
+                            
+                            <v-text-field
+                                label="Nome"
+                                v-model="nome"
+                            ></v-text-field>
+
+                        </v-col>
+
+
+                    </v-row>
+
+                    <v-row>
+                        <v-col>
+                            <v-btn
+                                @click="enviarEmail()"
+                            >
+                                <v-icon>mdi-account-plus</v-icon>
+                                <span>Enviar</span>
+                            </v-btn>
+                        </v-col>
+                    </v-row>
+                </v-container>
+            </v-main>
+        </v-app>
+
+    </script>
+
+    <div id="app"></div>
+
+    <script src="vue.js"></script>
+    <script src="vuetify.js"></script>
+
+    <script>
+        const App = {
+            template: '#app-template',
+            data() {
+
+                return {
+                    itemsTemplate: [
+                        {
+                            "text": "Boas vindas",
+                            "value": "BOAS_VINDAS"
+                        }
+                    ],
+
+                    selectedTemplate: "",
+
+                    itemsDestinatarios: [
+                        {
+                            "text": "José",
+                            "value": "Jose@gmail.com"
+                        },
+                        {
+                            "text": "Will",
+                            "value": "will@gmail.com"
+                        }
+                    ],
+                    selectedDestinatarios: [],
+
+                    nome: ""
+                }
+
+            },
+
+            methods: {
+                async enviarEmail() {
+
+                    let body = JSON.stringify(
+                        {
+                            "chave": this.selectedTemplate,
+                            "destinatarios": this.selectedDestinatarios,
+                            "destinatariosCopia": [
+                                
+                            ],
+                            "dados": {
+                                "NOME": this.nome
+                            }
+                        }
+                    )
+
+                    const response = await fetch('http://localhost:8080/v1/email', {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": "Basic YWx1bm86ZmlhcHNlY3VyaXR5",
+                            "Content-Type": "application/json; charset=UTF-8"
+                        },
+                        // mode: 'no-cors',
+                        body: body
+                    })
+
+                    if(response.status){
+                        alert("email enviado")
+                    }
+
+                    else{
+                        alert("Erro ao enviar")
+                    }
+
+                    
+
+                    console.log(body);
+
+                },
+
+                async fetchAPI(url, options = {}, timeout = null) {
+                    // found the two things you can't do with fetch that you can with XHR ... you can't set your own value for request timeout in fetch, nor can you get progress events
+
+                    if (timeout != null) { // em desenvolvimento...
+                        const controller = new AbortController();
+                        options.signal = controller.signal
+                    }
+
+                    // const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+                    var response = await fetch(url, options)
+                        .then(async function(response) {
+
+                            if (response.ok) {
+
+                                let contentType = response.headers.get("Content-Type").toUpperCase();
+
+                                if (contentType && contentType.indexOf("APPLICATION/JSON") !== -1) {
+
+                                    return {
+                                        ok: response.ok,
+                                        status: response.status,
+                                        data: await response.json()
+                                    }
+
+                                } else {
+                                    console.log("Oops, we haven't got JSON!");
+                                    return {
+                                        ok: response.ok,
+                                        status: response.status,
+                                        error: "Oops, we haven't got JSON!"
+                                    }
+                                }
+
+                            } else {
+                                console.log('Network response was not ok.');
+                                return {
+                                    ok: response.ok,
+                                    status: response.status,
+                                    error: 'Network response was not ok.'
+                                }
+                            }
+
+                        })
+                        .catch(function(error) {
+                            console.log('There has been a problem with your fetch operation: ' + error.message);
+                            return {
+                                error: 'There has been a problem with your fetch operation: ' + error.message
+                            }
+                        });
+
+                    return response;
+
+                },
+
+            },
+
+            async created() {
+
+            }
+
+        }
+
+        new Vue({
+            vuetify: new Vuetify(),
+            render: h => h(App)
+        }).$mount('#app')
+    </script>
